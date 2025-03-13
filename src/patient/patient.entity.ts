@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 
 @Entity('patients')
-@Unique(['name', 'phone', 'chart_number']) // 중복 방지
+@Unique(['name', 'phone', 'chart_number'])
 export class Patient {
   @PrimaryGeneratedColumn()
   id: number;
