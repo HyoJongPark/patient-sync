@@ -11,11 +11,13 @@ export class PatientDTO {
   name: string;
 
   @IsString()
-  @Matches(/^\d{11}$/, { message: '전화번호는 11자리 숫자만 허용됩니다.' })
+  @Matches(/^(01[016789]-?\d{4}-?\d{4})$|^(0[2-9]\d?-?\d{3,4}-?\d{4})$/, {
+    message: '유효한 한국 전화번호 형식이 아닙니다.',
+  })
   phone: string;
 
   @IsString()
-  @Matches(/^\d{6}-\d{7}$|^\d{6}$/, {
+  @Matches(/^\d{2}(0[1-9]|1[0-2])(0[1-9]|1\d|2\d|3[0-1])(-?[1-4]\d{6})?$/, {
     message: '유효한 주민등록번호 형식이어야 합니다.',
   })
   ssn: string;
