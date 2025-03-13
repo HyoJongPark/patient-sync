@@ -7,6 +7,7 @@ export const typeOrmConfig: TypeOrmModuleOptions = {
   username: 'user',
   password: 'password',
   database: 'patient_db',
-  entities: [__dirname + '/../**/entity/*.entity{.ts,.js}'],
+  entities: [__dirname + '/../**/*.entity{.ts,.js}'],
   synchronize: true,
+  logging: true, // SQL 로그 출력
 };
