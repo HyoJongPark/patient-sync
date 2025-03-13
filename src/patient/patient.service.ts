@@ -27,6 +27,7 @@ export class PatientService {
 
     const patients: Patient[] = [];
     for (const row of patientJson) {
+      //validate
       const dto = Object.assign(new PatientDTO(), row);
       const errors: ValidationError[] = await validate(dto);
       if (errors.length > 0) {
@@ -34,13 +35,8 @@ export class PatientService {
         continue;
       }
 
-      const patient = new Patient();
-      Object.assign(patient, dto);
-
-      // translate
-      patient.phone = patient.phone.replace(/-/g, '');
-      patient.ssn = this.maskSSN(patient.ssn);
-
+      //transform to entity
+      const patient = dto.toEntity(dto);
       patients.push(patient);
     }
 
@@ -89,34 +85,5 @@ export class PatientService {
     } finally {
       await queryRunner.release();
     }
-  }
-
-  maskSSN(ssn: string): string {
-    if (/^\d{6}-\d{7}$/.test(ssn)) {
-      return `${ssn.substring(0, 8)}******`;
-    }
-    if (/^\d{6}$/.test(ssn)) {
-      return `${ssn}-0******`;
-    }
-    return ssn;
-  }
-
-  isValidDataFormat(patient: Patient) {
-    if (!patient.name || patient.name.length < 1 || patient.name.length > 16) {
-      return false;
-    }
-
-    if (!/^\d{11}$/.test(patient.phone)) {
-      return false;
-    }
-
-    if (
-      !/^\d{6}$/.test(patient.ssn) && // 990101
-      !/^\d{6}-\d{7}$/.test(patient.ssn) // 720226-3701592
-    ) {
-      return false;
-    }
-
-    return true;
   }
 }
