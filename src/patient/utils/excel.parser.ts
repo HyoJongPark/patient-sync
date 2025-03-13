@@ -1,14 +1,33 @@
 import * as xlsx from 'xlsx';
+import { ValidationError, validate } from 'class-validator';
 
-export class ExcelFileParser<T> {
-  constructor(private fieldMap: { [key: string]: keyof T }) {}
+export class ExcelFileParser<T extends object> {
+  constructor(
+    private readonly fieldMap: { [key: string]: keyof T },
+    private readonly dtoClass: new () => T,
+  ) {}
 
-  parse(buffer: Buffer): T[] {
+  async parse(buffer: Buffer): Promise<T[]> {
     const workbook = xlsx.read(buffer, { type: 'buffer' });
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
 
-    return xlsx.utils.sheet_to_json<T>(sheet, {
+    const jsonData = xlsx.utils.sheet_to_json<T>(sheet, {
       header: Object.values(this.fieldMap).map(String),
     });
+
+    const validatedData: (T | null)[] = await Promise.all(
+      jsonData.map(async (data) => {
+        const dto = Object.assign(new this.dtoClass(), data);
+
+        const errors: ValidationError[] = await validate(dto);
+        if (errors.length > 0) {
+          console.warn(`유효하지 않은 데이터: ${JSON.stringify(errors)}`);
+          return null;
+        }
+
+        return dto;
+      }),
+    );
+    return validatedData.filter((item): item is T => item !== null);
   }
 }

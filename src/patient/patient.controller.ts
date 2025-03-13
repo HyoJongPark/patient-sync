@@ -7,6 +7,9 @@ import {
 } from '@nestjs/common';
 import { PatientService } from './patient.service';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { fieldMap } from './utils/patient.constants';
+import { ExcelFileParser } from './utils/excel.parser';
+import { PatientDTO } from './patient.dto';
 
 @Controller('patient')
 export class PatientController {
@@ -32,8 +35,12 @@ export class PatientController {
     if (!file) {
       throw new BadRequestException('데이터 파일이 존재하지 않습니다.');
     }
+    const dto = await new ExcelFileParser<PatientDTO>(
+      fieldMap,
+      PatientDTO,
+    ).parse(file.buffer);
 
-    const count: number = await this.patientService.upload(file.buffer);
+    const count: number = await this.patientService.upload(dto);
     return { success: true, count };
   }
 }
