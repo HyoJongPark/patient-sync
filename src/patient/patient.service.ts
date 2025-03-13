@@ -22,6 +22,8 @@ export class PatientService {
     const patientJson = new ExcelFileParser<PatientDTO>(fieldMap).parse(buffer);
 
     const patients: Patient[] = [];
+    const uniqueMap = new Map<string, Patient>();
+
     for (const row of patientJson) {
       //validate
       const dto = Object.assign(new PatientDTO(), row);
@@ -31,12 +33,19 @@ export class PatientService {
         continue;
       }
 
+      // excel 파일 내 중복 데이터 제거
+      const key = `${dto.name}-${dto.phone}-${dto.chart_number || ''}`;
+      if (uniqueMap.has(key)) {
+        continue;
+      }
+
       //transform to entity
       const patient = dto.toEntity(dto);
       patients.push(patient);
+      uniqueMap.set(key, patient);
     }
 
-    await this.patientRepository.bulkInsertOrUpdate(patients);
+    await this.patientRepository.bulkInsertOrUpdate(patients, uniqueMap);
 
     return patients.length;
   }
