@@ -1,10 +1,9 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Patient } from './patient.entity';
-import { InjectEntityManager } from '@nestjs/typeorm';
-import { EntityManager } from 'typeorm';
 import { PatientDTO } from './patient.dto';
 import { ExcelFileParser } from './utils/excel.parser';
 import { ValidationError, validate } from 'class-validator';
+import { PatientRepository } from './patient.repository';
 
 const fieldMap: { [key: string]: keyof PatientDTO } = {
   차트번호: 'chart_number',
@@ -17,10 +16,7 @@ const fieldMap: { [key: string]: keyof PatientDTO } = {
 
 @Injectable()
 export class PatientService {
-  constructor(
-    @InjectEntityManager()
-    private readonly entityManager: EntityManager,
-  ) {}
+  constructor(private readonly patientRepository: PatientRepository) {}
 
   async upload(buffer: Buffer) {
     const patientJson = new ExcelFileParser<PatientDTO>(fieldMap).parse(buffer);
@@ -40,50 +36,8 @@ export class PatientService {
       patients.push(patient);
     }
 
-    await this.bulkInsertOrUpdate(patients);
+    await this.patientRepository.bulkInsertOrUpdate(patients);
 
     return patients.length;
-  }
-
-  async bulkInsertOrUpdate(
-    patients: Patient[],
-    batchSize = 5000,
-  ): Promise<void> {
-    if (patients.length === 0) return;
-
-    const queryRunner = this.entityManager.connection.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
-      const batchPromises: Promise<any>[] = [];
-
-      for (let i = 0; i < patients.length; i += batchSize) {
-        const batch = patients.slice(i, i + batchSize);
-
-        const insertPromise = queryRunner.manager
-          .createQueryBuilder()
-          .insert()
-          .into(Patient)
-          .values(batch)
-          .orUpdate(
-            ['ssn', 'address', 'memo'],
-            ['name', 'phone', 'chart_number'],
-          )
-          .execute();
-
-        batchPromises.push(insertPromise);
-      }
-
-      await Promise.all(batchPromises);
-      await queryRunner.commitTransaction();
-    } catch (e) {
-      await queryRunner.rollbackTransaction();
-      throw new InternalServerErrorException(
-        '내부 서버에서 문제가 발생했습니다.',
-      );
-    } finally {
-      await queryRunner.release();
-    }
   }
 }
