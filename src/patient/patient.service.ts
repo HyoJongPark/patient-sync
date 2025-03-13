@@ -1,10 +1,12 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import * as xlsx from 'xlsx';
-import { Patient } from './entity/patient.entity';
+import { Patient } from './patient.entity';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
+import { PatientDTO } from './patient.dto';
+import { ExcelFileParser } from './utils/excel.parser';
 
-const fieldMap: { [key: string]: keyof Patient } = {
+const fieldMap: { [key: string]: keyof PatientDTO } = {
   차트번호: 'chart_number',
   이름: 'name',
   전화번호: 'phone',
@@ -21,22 +23,12 @@ export class PatientService {
   ) {}
 
   async upload(buffer: Buffer) {
-    const workbook = xlsx.read(buffer, { type: 'buffer' });
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const jsonData: Record<string, any>[] = xlsx.utils.sheet_to_json(sheet);
+    const patientDtos = new ExcelFileParser<PatientDTO>(fieldMap).parse(buffer);
 
     const patients: Patient[] = [];
-    for (const row of jsonData) {
+    for (const row of patientDtos) {
       const patient = new Patient();
-
-      Object.assign(
-        patient,
-        Object.fromEntries(
-          Object.entries(fieldMap)
-            .filter(([key]) => row[key] !== undefined)
-            .map(([key, value]) => [value, String(row[key]).trim()]),
-        ),
-      );
+      Object.assign(patient, row);
 
       if (!this.isValidDataFormat(patient)) {
         continue;
