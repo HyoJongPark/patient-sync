@@ -1,10 +1,10 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import * as xlsx from 'xlsx';
 import { Patient } from './patient.entity';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager } from 'typeorm';
 import { PatientDTO } from './patient.dto';
 import { ExcelFileParser } from './utils/excel.parser';
+import { ValidationError, validate } from 'class-validator';
 
 const fieldMap: { [key: string]: keyof PatientDTO } = {
   차트번호: 'chart_number',
@@ -23,16 +23,19 @@ export class PatientService {
   ) {}
 
   async upload(buffer: Buffer) {
-    const patientDtos = new ExcelFileParser<PatientDTO>(fieldMap).parse(buffer);
+    const patientJson = new ExcelFileParser<PatientDTO>(fieldMap).parse(buffer);
 
     const patients: Patient[] = [];
-    for (const row of patientDtos) {
-      const patient = new Patient();
-      Object.assign(patient, row);
-
-      if (!this.isValidDataFormat(patient)) {
+    for (const row of patientJson) {
+      const dto = Object.assign(new PatientDTO(), row);
+      const errors: ValidationError[] = await validate(dto);
+      if (errors.length > 0) {
+        console.warn(`유효하지 않은 데이터: ${JSON.stringify(errors)}`);
         continue;
       }
+
+      const patient = new Patient();
+      Object.assign(patient, dto);
 
       // translate
       patient.phone = patient.phone.replace(/-/g, '');
