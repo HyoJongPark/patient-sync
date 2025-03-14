@@ -14,7 +14,7 @@ export class Patient {
   id: number;
 
   @Column({ length: 20, nullable: true })
-  chart_number?: string;
+  chart_number: string;
 
   @Column({ length: 16 })
   name: string;
@@ -36,4 +36,34 @@ export class Patient {
 
   @UpdateDateColumn()
   updated_at: Date;
+
+  static of(
+    chart_number: string | undefined,
+    name: string,
+    phone: string,
+    ssn: string,
+    address: string | undefined,
+    memo: string | undefined,
+  ): Patient {
+    const patient = new Patient();
+
+    patient.chart_number = chart_number ?? 'emtpy';
+    patient.name = name;
+    patient.phone = phone.replace(/-/g, '');
+    patient.ssn = Patient.maskSSN(ssn);
+    patient.address = address;
+    patient.memo = memo;
+
+    return patient;
+  }
+
+  private static maskSSN(ssn: string): string {
+    if (/^\d{6}-\d{7}$/.test(ssn)) {
+      return `${ssn.substring(0, 8)}******`;
+    }
+    if (/^\d{6}$/.test(ssn)) {
+      return `${ssn}-0******`;
+    }
+    return ssn;
+  }
 }

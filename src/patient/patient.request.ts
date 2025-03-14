@@ -1,7 +1,7 @@
 import { IsString, IsOptional, Length, Matches } from 'class-validator';
 import { Patient } from './patient.entity';
 
-export class PatientDTO {
+export class PatientExcelRequest {
   @IsOptional()
   @IsString()
   chart_number?: string;
@@ -30,22 +30,14 @@ export class PatientDTO {
   @IsString()
   memo?: string;
 
-  toEntity(dto: PatientDTO): Patient {
-    const patient = Object.assign(new Patient(), dto);
-
-    patient.phone = patient.phone.replace(/-/g, '');
-    patient.ssn = this.maskSSN(patient.ssn);
-
-    return patient;
-  }
-
-  private maskSSN(ssn: string): string {
-    if (/^\d{6}-\d{7}$/.test(ssn)) {
-      return `${ssn.substring(0, 8)}******`;
-    }
-    if (/^\d{6}$/.test(ssn)) {
-      return `${ssn}-0******`;
-    }
-    return ssn;
+  toEntity(): Patient {
+    return Patient.of(
+      this.chart_number,
+      this.name,
+      this.phone,
+      this.ssn,
+      this.address,
+      this.memo,
+    );
   }
 }
