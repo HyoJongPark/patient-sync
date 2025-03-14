@@ -31,8 +31,9 @@ export class PatientService {
     );
     let count = 0;
     for (const result of insertedResults) {
-      count += result.identifiers.length;
+      count += result.raw['affectedRows'];
     }
+    console.log(insertedResults);
     return new PatientExcelResponse(count);
   }
 }
