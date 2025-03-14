@@ -14,7 +14,7 @@ export class PatientService {
 
     for (const data of dto) {
       // excel 파일 내 중복 데이터 제거
-      const key = `${data.name}-${data.phone}-${data.chart_number || ''}`;
+      const key = `${data.name}-${data.phone}-${data.chart_number || 'empty'}`;
       if (uniqueMap.has(key)) {
         continue;
       }
@@ -25,14 +25,13 @@ export class PatientService {
       uniqueMap.set(key, patient);
     }
 
-    const result = await this.patientRepository.bulkInsertOrUpdate(
+    const insertedResults = await this.patientRepository.bulkInsertOrUpdate(
       patients,
       uniqueMap,
     );
-
     let count = 0;
-    for (const r of result) {
-      count += r.identifiers.length;
+    for (const result of insertedResults) {
+      count += result.identifiers.length;
     }
     return new PatientExcelResponse(count);
   }

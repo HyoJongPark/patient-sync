@@ -42,14 +42,14 @@ export class PatientRepository {
         existingPatientsWithNullChartNum,
       );
 
-      const result = await this.batchInsertOrUpdate(
+      const insertedResults = await this.batchInsertOrUpdate(
         queryRunner,
         patients,
         batchSize,
       );
       await queryRunner.commitTransaction();
 
-      return result;
+      return insertedResults;
     } catch (err) {
       await queryRunner.rollbackTransaction();
       console.error(err);
@@ -75,7 +75,10 @@ export class PatientRepository {
       .from(Patient, 'patient')
       .where(
         `(patient.name, patient.phone, patient.chart_number) IN (${patients
-          .map((p) => `('${p.name}', '${p.phone}', '${p.chart_number}')`)
+          .map(
+            (p) =>
+              `('${p.name}', '${p.phone}', '${p.chart_number ?? 'empty'}')`,
+          )
           .join(', ')})`,
       )
       .getMany();
@@ -84,7 +87,7 @@ export class PatientRepository {
       .createQueryBuilder()
       .select(['id', 'name', 'phone'])
       .from(Patient, 'patient')
-      .where(`patient.chart_number IS NULL`)
+      .where(`patient.chart_number = 'empty'`)
       .andWhere(
         `(patient.name, patient.phone) IN (${patients
           .map((p) => `('${p.name}', '${p.phone}')`)
@@ -94,7 +97,9 @@ export class PatientRepository {
 
     return {
       existingPatients: new Set(
-        existingPatients.map((p) => `${p.name}-${p.phone}-${p.chart_number}`),
+        existingPatients.map(
+          (p) => `${p.name}-${p.phone}-${p.chart_number ?? 'empty'}`,
+        ),
       ),
       existingPatientsWithNullChartNum: new Map(
         patientsWithNullChartData.map((p) => [`${p.name}-${p.phone}`, p.id]),
@@ -144,21 +149,22 @@ export class PatientRepository {
     patients: Patient[],
     batchSize: number,
   ): Promise<InsertResult[]> {
-    const insertedPatients: Promise<InsertResult>[] = [];
+    const insertedResults: Promise<InsertResult>[] = [];
 
     for (let i = 0; i < patients.length; i += batchSize) {
       const batch = patients.slice(i, i + batchSize);
 
-      const result = queryRunner.manager
+      const insertResult = queryRunner.manager
         .createQueryBuilder()
         .insert()
         .into(Patient)
         .values(batch)
-        .orUpdate(['ssn', 'address', 'memo'], ['name', 'phone', 'chart_number'])
+        .orUpdate(['ssn', 'address', 'memo'], ['chart_number', 'name', 'phone'])
+        .updateEntity(false)
         .execute();
 
-      insertedPatients.push(result);
+      insertedResults.push(insertResult);
     }
-    return await Promise.all(insertedPatients);
+    return await Promise.all(insertedResults);
   }
 }

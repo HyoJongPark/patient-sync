@@ -13,8 +13,8 @@ export class Patient {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ length: 20, nullable: true })
-  chart_number: string;
+  @Column({ length: 20, default: 'empty' })
+  chart_number?: string;
 
   @Column({ length: 16 })
   name: string;
@@ -47,7 +47,7 @@ export class Patient {
   ): Patient {
     const patient = new Patient();
 
-    patient.chart_number = chart_number ?? 'emtpy';
+    patient.chart_number = chart_number;
     patient.name = name;
     patient.phone = phone.replace(/-/g, '');
     patient.ssn = Patient.maskSSN(ssn);
