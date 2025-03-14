@@ -6,7 +6,7 @@ import {
   Repository,
   UpdateResult,
 } from 'typeorm';
-import { Patient } from './patient.entity';
+import { Patient } from '../domain/patient.entity';
 
 @Injectable()
 export class PatientRepository {

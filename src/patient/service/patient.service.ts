@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { Patient } from './patient.entity';
-import { PatientExcelRequest } from './patient.request';
-import { PatientRepository } from './patient.repository';
-import { PatientExcelResponse } from './patient.response';
+import { Patient } from '../domain/patient.entity';
+import { PatientExcelRequest } from '../controller/request/patient.request';
+import { PatientRepository } from '../repository/patient.repository';
+import { PatientExcelResponse } from '../controller/response/patient.response';
 
 @Injectable()
 export class PatientService {

@@ -5,12 +5,12 @@ import {
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
-import { PatientService } from './patient.service';
+import { PatientService } from '../service/patient.service';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { fieldMap } from './utils/patient.constants';
-import { ExcelFileParser } from './utils/excel.parser';
-import { PatientExcelRequest } from './patient.request';
-import { PatientExcelResponse } from './patient.response';
+import { fieldMap } from '../utils/patient.constants';
+import { ExcelFileParser } from '../utils/excel.parser';
+import { PatientExcelRequest } from './request/patient.request';
+import { PatientExcelResponse } from './response/patient.response';
 
 @Controller('patient')
 export class PatientController {

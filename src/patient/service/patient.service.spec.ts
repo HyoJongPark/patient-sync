@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PatientService } from './patient.service';
-import { PatientExcelRequest } from './patient.request';
-import { PatientRepository } from '../domain/patient.repository';
+import { PatientRepository } from '../repository/patient.repository';
+import { PatientExcelRequest } from '../controller/request/patient.request';
 
 describe('PatientService', () => {
   let service: PatientService;
@@ -48,7 +48,7 @@ describe('PatientService', () => {
       const result = await service.upload(mockData);
 
       //then
-      expect(result).toBe(1);
+      expect(result.successCount).toBe(1);
     });
 
     it('(이름, 번호, 차트번호) - (이름, 번호, undefined)인 데이터는 별개의 데이터', async () => {
@@ -75,7 +75,7 @@ describe('PatientService', () => {
       const result = await service.upload(mockData);
 
       //then
-      expect(result).toBe(3);
+      expect(result.successCount).toBe(3);
     });
 
     it('중복 데이터가 없다면 제외하지 않는다.', async () => {
@@ -102,7 +102,7 @@ describe('PatientService', () => {
       const result = await service.upload(mockData);
 
       //then
-      expect(result).toBe(3);
+      expect(result.successCount).toBe(3);
     });
 
     it('빈 배열 데이터의 경우 0 반환', async () => {
@@ -113,7 +113,7 @@ describe('PatientService', () => {
       const result = await service.upload(emptyArray);
 
       //then
-      expect(result).toBe(0);
+      expect(result.successCount).toBe(0);
     });
   });
 });

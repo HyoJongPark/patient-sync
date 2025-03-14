@@ -1,5 +1,5 @@
 import { IsString, IsOptional, Length, Matches } from 'class-validator';
-import { Patient } from './patient.entity';
+import { Patient } from '../../domain/patient.entity';
 
 export class PatientExcelRequest {
   @IsOptional()
