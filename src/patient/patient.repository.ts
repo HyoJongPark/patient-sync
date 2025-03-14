@@ -1,5 +1,11 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { DataSource, QueryRunner, Repository, UpdateResult } from 'typeorm';
+import {
+  DataSource,
+  InsertResult,
+  QueryRunner,
+  Repository,
+  UpdateResult,
+} from 'typeorm';
 import { Patient } from './patient.entity';
 
 @Injectable()
@@ -18,8 +24,8 @@ export class PatientRepository {
     patients: Patient[],
     deduplicatedPatients: Map<string, Patient>,
     batchSize = 5000,
-  ): Promise<void> {
-    if (patients.length === 0) return;
+  ): Promise<InsertResult[]> {
+    if (patients.length === 0) return [];
 
     const queryRunner = this.datasource.createQueryRunner();
     await queryRunner.connect();
@@ -36,9 +42,14 @@ export class PatientRepository {
         existingPatientsWithNullChartNum,
       );
 
-      await this.batchInsertOrUpdate(queryRunner, patients, batchSize);
-
+      const result = await this.batchInsertOrUpdate(
+        queryRunner,
+        patients,
+        batchSize,
+      );
       await queryRunner.commitTransaction();
+
+      return result;
     } catch (err) {
       await queryRunner.rollbackTransaction();
       console.error(err);
@@ -113,7 +124,7 @@ export class PatientRepository {
           queryRunner.manager
             .createQueryBuilder()
             .update(Patient)
-            .set({ chart_number: patient.chart_number })
+            .set(patient)
             .where('id = :id', {
               id: patientsWithNullChart.get(`${patient.name}-${patient.phone}`),
             })
@@ -132,17 +143,22 @@ export class PatientRepository {
     queryRunner: QueryRunner,
     patients: Patient[],
     batchSize: number,
-  ): Promise<void> {
+  ): Promise<InsertResult[]> {
+    const insertedPatients: Promise<InsertResult>[] = [];
+
     for (let i = 0; i < patients.length; i += batchSize) {
       const batch = patients.slice(i, i + batchSize);
 
-      await queryRunner.manager
+      const result = queryRunner.manager
         .createQueryBuilder()
         .insert()
         .into(Patient)
         .values(batch)
         .orUpdate(['ssn', 'address', 'memo'], ['name', 'phone', 'chart_number'])
         .execute();
+
+      insertedPatients.push(result);
     }
+    return await Promise.all(insertedPatients);
   }
 }

@@ -1,13 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { Patient } from './patient.entity';
-import { PatientDTO } from './patient.dto';
+import { PatientExcelRequest } from './patient.request';
 import { PatientRepository } from './patient.repository';
+import { PatientExcelResponse } from './patient.response';
 
 @Injectable()
 export class PatientService {
   constructor(private readonly patientRepository: PatientRepository) {}
 
-  async upload(dto: PatientDTO[]) {
+  async upload(dto: PatientExcelRequest[]): Promise<PatientExcelResponse> {
     const patients: Patient[] = [];
     const uniqueMap = new Map<string, Patient>();
 
@@ -19,13 +20,20 @@ export class PatientService {
       }
 
       //transform to entity
-      const patient = data.toEntity(data);
+      const patient = data.toEntity();
       patients.push(patient);
       uniqueMap.set(key, patient);
     }
 
-    await this.patientRepository.bulkInsertOrUpdate(patients, uniqueMap);
+    const result = await this.patientRepository.bulkInsertOrUpdate(
+      patients,
+      uniqueMap,
+    );
 
-    return patients.length;
+    let count = 0;
+    for (const r of result) {
+      count += r.identifiers.length;
+    }
+    return new PatientExcelResponse(count);
   }
 }
