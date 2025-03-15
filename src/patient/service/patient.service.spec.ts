@@ -2,28 +2,23 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PatientService } from './patient.service';
 import { PatientRepository } from '../repository/patient.repository';
 import { PatientExcelRequest } from '../controller/request/patient.request';
+import { InsertResult } from 'typeorm';
 
 describe('PatientService', () => {
-  let service: PatientService;
+  let patientService: PatientService;
+  let patientRepository: PatientRepository;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        PatientService,
-        {
-          provide: PatientRepository,
-          useValue: {
-            bulkInsertOrUpdate: jest.fn(),
-          },
-        },
-      ],
+      providers: [PatientService, PatientRepository],
     }).compile();
 
-    service = module.get<PatientService>(PatientService);
+    patientService = module.get<PatientService>(PatientService);
+    patientRepository = module.get<PatientRepository>(PatientRepository);
   });
 
   it('should be defined', () => {
-    expect(service).toBeDefined();
+    expect(patientService).toBeDefined();
   });
 
   describe('(이름, 번호, 차트번호)를 기준으로 데이터 중복 제거', () => {
@@ -37,15 +32,18 @@ describe('PatientService', () => {
         phone: '123-4567',
         chart_number: '001',
       };
-
       const mockData: PatientExcelRequest[] = [
         createPatientDTO(duplicateData),
         createPatientDTO(duplicateData),
         createPatientDTO(duplicateData),
       ];
 
+      (patientRepository.bulkInsertOrUpdate as jest.Mock).mockResolvedValue([
+        { raw: { affectedRows: 1 } },
+      ]);
+
       //when
-      const result = await service.upload(mockData);
+      const result = await patientService.upload(mockData);
 
       //then
       expect(result.successCount).toBe(1);
@@ -71,8 +69,12 @@ describe('PatientService', () => {
         }),
       ];
 
+      (patientRepository.bulkInsertOrUpdate as jest.Mock).mockResolvedValue([
+        { raw: { affectedRows: mockData.length } },
+      ]);
+
       //when
-      const result = await service.upload(mockData);
+      const result = await patientService.upload(mockData);
 
       //then
       expect(result.successCount).toBe(3);
@@ -98,8 +100,12 @@ describe('PatientService', () => {
         }),
       ];
 
+      (patientRepository.bulkInsertOrUpdate as jest.Mock).mockResolvedValue([
+        { raw: { affectedRows: mockData.length } },
+      ]);
+
       //when
-      const result = await service.upload(mockData);
+      const result = await patientService.upload(mockData);
 
       //then
       expect(result.successCount).toBe(3);
@@ -108,9 +114,12 @@ describe('PatientService', () => {
     it('빈 배열 데이터의 경우 0 반환', async () => {
       //given
       const emptyArray = [];
+      (patientRepository.bulkInsertOrUpdate as jest.Mock).mockResolvedValue([
+        { raw: { affectedRows: emptyArray.length } },
+      ]);
 
       // when
-      const result = await service.upload(emptyArray);
+      const result = await patientService.upload(emptyArray);
 
       //then
       expect(result.successCount).toBe(0);
