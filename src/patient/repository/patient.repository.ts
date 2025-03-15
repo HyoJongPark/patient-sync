@@ -1,6 +1,7 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import {
   DataSource,
+  In,
   InsertResult,
   QueryRunner,
   Repository,
@@ -79,19 +80,19 @@ export class PatientRepository extends Repository<Patient> {
           )
           .join(', ')})`,
       )
-      .getMany();
+      .getRawMany<Patient>();
 
     const patientsWithNullChartData = await queryRunner.manager
       .createQueryBuilder()
       .select(['id', 'name', 'phone'])
       .from(Patient, 'patient')
-      .where(`patient.chart_number = 'empty'`)
+      .where("patient.chart_number = 'empty'")
       .andWhere(
         `(patient.name, patient.phone) IN (${patients
           .map((p) => `('${p.name}', '${p.phone}')`)
           .join(', ')})`,
       )
-      .getMany();
+      .getRawMany<Patient>();
 
     return {
       existingPatients: new Set(

@@ -200,10 +200,10 @@ describe('PatientRepository (Integration Tests)', () => {
         name: '김철수',
         phone: '01012345678',
       });
-      console.log(result);
 
       expect(result.length).toBe(1);
       expect(result[0].chart_number).toBe(updatedPatient.chart_number);
+      expect(result[0].address).toBe(updatedPatient.address);
     });
   });
 });
