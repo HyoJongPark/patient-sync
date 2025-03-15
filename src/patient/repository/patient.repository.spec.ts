@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { DataSource, QueryRunner } from 'typeorm';
+import { DataSource } from 'typeorm';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PatientRepository } from '../repository/patient.repository';
 import { Patient } from '../domain/patient.entity';

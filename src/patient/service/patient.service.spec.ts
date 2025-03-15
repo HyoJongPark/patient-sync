@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PatientService } from './patient.service';
 import { PatientRepository } from '../repository/patient.repository';
 import { PatientExcelRequest } from '../controller/request/patient.request';
-import { InsertResult } from 'typeorm';
 
 describe('PatientService', () => {
   let patientService: PatientService;
@@ -10,7 +9,15 @@ describe('PatientService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [PatientService, PatientRepository],
+      providers: [
+        PatientService,
+        {
+          provide: PatientRepository,
+          useValue: {
+            bulkInsertOrUpdate: jest.fn(),
+          },
+        },
+      ],
     }).compile();
 
     patientService = module.get<PatientService>(PatientService);
