@@ -33,7 +33,6 @@ export class PatientService {
     for (const result of insertedResults) {
       count += result.raw['affectedRows'];
     }
-    console.log(insertedResults);
     return new PatientExcelResponse(count);
   }
 }
