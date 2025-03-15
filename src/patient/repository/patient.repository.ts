@@ -9,11 +9,9 @@ import {
 import { Patient } from '../domain/patient.entity';
 
 @Injectable()
-export class PatientRepository {
-  private patientRepository: Repository<Patient>;
-
+export class PatientRepository extends Repository<Patient> {
   constructor(private readonly datasource: DataSource) {
-    this.patientRepository = this.datasource.getRepository(Patient);
+    super(Patient, datasource.createEntityManager());
   }
 
   /**
