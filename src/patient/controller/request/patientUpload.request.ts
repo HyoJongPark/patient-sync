@@ -1,7 +1,7 @@
 import { IsString, IsOptional, Length, Matches } from 'class-validator';
 import { Patient } from '../../domain/patient.entity';
 
-export class PatientExcelRequest {
+export class PatientUploadRequest {
   @IsOptional()
   @IsString()
   chart_number?: string;

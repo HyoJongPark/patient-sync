@@ -1,7 +1,6 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import {
   DataSource,
-  In,
   InsertResult,
   QueryRunner,
   Repository,
@@ -13,6 +12,14 @@ import { Patient } from '../domain/patient.entity';
 export class PatientRepository extends Repository<Patient> {
   constructor(private readonly datasource: DataSource) {
     super(Patient, datasource.createEntityManager());
+  }
+
+  async findAllOrderById(limit: number, offset: number) {
+    return await this.createQueryBuilder('patient')
+      .orderBy('id', 'ASC')
+      .limit(limit)
+      .offset(offset)
+      .getMany();
   }
 
   /**
@@ -82,6 +89,7 @@ export class PatientRepository extends Repository<Patient> {
       )
       .getRawMany<Patient>();
 
+    console.log(existingPatients);
     const patientsWithNullChartData = await queryRunner.manager
       .createQueryBuilder()
       .select(['id', 'name', 'phone'])

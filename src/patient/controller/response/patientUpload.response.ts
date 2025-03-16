@@ -1,4 +1,4 @@
-export class PatientExcelResponse {
+export class PatientUploadResponse {
   successCount: number;
   message: string;
 

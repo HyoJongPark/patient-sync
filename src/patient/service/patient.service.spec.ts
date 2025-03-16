@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PatientService } from './patient.service';
 import { PatientRepository } from '../repository/patient.repository';
-import { PatientExcelRequest } from '../controller/request/patient.request';
+import { PatientUploadRequest } from '../controller/request/patientUpload.request';
 
 describe('PatientService', () => {
   let patientService: PatientService;
@@ -29,8 +29,8 @@ describe('PatientService', () => {
   });
 
   describe('(이름, 번호, 차트번호)를 기준으로 데이터 중복 제거', () => {
-    const createPatientDTO = (data: Partial<PatientExcelRequest>) =>
-      Object.assign(new PatientExcelRequest(), data);
+    const createPatientDTO = (data: Partial<PatientUploadRequest>) =>
+      Object.assign(new PatientUploadRequest(), data);
 
     it('(이름, 번호, 차트번호)가 모두 일치하는 데이터는 제외', async () => {
       //given
@@ -39,7 +39,7 @@ describe('PatientService', () => {
         phone: '123-4567',
         chart_number: '001',
       };
-      const mockData: PatientExcelRequest[] = [
+      const mockData: PatientUploadRequest[] = [
         createPatientDTO(duplicateData),
         createPatientDTO(duplicateData),
         createPatientDTO(duplicateData),
@@ -58,7 +58,7 @@ describe('PatientService', () => {
 
     it('(이름, 번호, 차트번호) - (이름, 번호, undefined)인 데이터는 별개의 데이터', async () => {
       //given
-      const mockData: PatientExcelRequest[] = [
+      const mockData: PatientUploadRequest[] = [
         createPatientDTO({
           name: 'John Doe',
           phone: '123-4567',
@@ -89,7 +89,7 @@ describe('PatientService', () => {
 
     it('중복 데이터가 없다면 제외하지 않는다.', async () => {
       //given
-      const mockData: PatientExcelRequest[] = [
+      const mockData: PatientUploadRequest[] = [
         createPatientDTO({
           name: 'John Doe',
           phone: '123-4567',

@@ -1,20 +1,31 @@
 import {
   BadRequestException,
   Controller,
+  Get,
   Post,
+  Query,
   UploadedFile,
   UseInterceptors,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { PatientService } from '../service/patient.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { fieldMap } from '../utils/patient.constants';
 import { ExcelFileParser } from '../utils/excel.parser';
-import { PatientExcelRequest } from './request/patient.request';
-import { PatientExcelResponse } from './response/patient.response';
+import { PatientUploadRequest } from './request/patientUpload.request';
+import { PatientUploadResponse } from './response/patientUpload.response';
+import { PageRequest } from 'src/utils/page.request';
 
 @Controller('patient')
 export class PatientController {
   constructor(private readonly patientService: PatientService) {}
+
+  @Get()
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async getPatients(@Query() param: PageRequest) {
+    return await this.patientService.getPatients(param);
+  }
 
   @Post('upload')
   @UseInterceptors(
@@ -32,15 +43,15 @@ export class PatientController {
       },
     }),
   )
-  async getHello(
+  async upload(
     @UploadedFile() file: Express.Multer.File,
-  ): Promise<PatientExcelResponse> {
+  ): Promise<PatientUploadResponse> {
     if (!file) {
       throw new BadRequestException('데이터 파일이 존재하지 않습니다.');
     }
-    const dto = await new ExcelFileParser<PatientExcelRequest>(
+    const dto = await new ExcelFileParser<PatientUploadRequest>(
       fieldMap,
-      PatientExcelRequest,
+      PatientUploadRequest,
     ).parse(file.buffer);
 
     return await this.patientService.upload(dto);

@@ -1,6 +1,6 @@
-import { PatientExcelRequest } from '../controller/request/patient.request';
+import { PatientUploadRequest } from '../controller/request/patientUpload.request';
 
-export const fieldMap: { [key: string]: keyof PatientExcelRequest } = {
+export const fieldMap: { [key: string]: keyof PatientUploadRequest } = {
   차트번호: 'chart_number',
   이름: 'name',
   전화번호: 'phone',

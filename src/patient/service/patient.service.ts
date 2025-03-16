@@ -1,14 +1,30 @@
 import { Injectable } from '@nestjs/common';
 import { Patient } from '../domain/patient.entity';
-import { PatientExcelRequest } from '../controller/request/patient.request';
+import { PatientUploadRequest } from '../controller/request/patientUpload.request';
 import { PatientRepository } from '../repository/patient.repository';
-import { PatientExcelResponse } from '../controller/response/patient.response';
+import { PatientUploadResponse } from '../controller/response/patientUpload.response';
+import { PatientSearchResponse } from '../controller/response/patientSearch.response';
+import { Page } from 'src/utils/page.response';
+import { PageRequest } from 'src/utils/page.request';
 
 @Injectable()
 export class PatientService {
   constructor(private readonly patientRepository: PatientRepository) {}
 
-  async upload(dto: PatientExcelRequest[]): Promise<PatientExcelResponse> {
+  async getPatients(param: PageRequest) {
+    const result = await this.patientRepository.findAllOrderById(
+      param.getLimit(),
+      param.getOffset(),
+    );
+
+    return new Page<PatientSearchResponse>(
+      param.getLimit(),
+      param.getPageNo(),
+      result.map((r) => new PatientSearchResponse(r)),
+    );
+  }
+
+  async upload(dto: PatientUploadRequest[]): Promise<PatientUploadResponse> {
     const patients: Patient[] = [];
     const uniqueMap = new Map<string, Patient>();
 
@@ -33,6 +49,6 @@ export class PatientService {
     for (const result of insertedResults) {
       count += result.raw['affectedRows'];
     }
-    return new PatientExcelResponse(count);
+    return new PatientUploadResponse(count);
   }
 }
