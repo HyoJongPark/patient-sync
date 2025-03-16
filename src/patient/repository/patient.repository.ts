@@ -89,7 +89,6 @@ export class PatientRepository extends Repository<Patient> {
       )
       .getRawMany<Patient>();
 
-    console.log(existingPatients);
     const patientsWithNullChartData = await queryRunner.manager
       .createQueryBuilder()
       .select(['id', 'name', 'phone'])

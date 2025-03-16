@@ -36,7 +36,55 @@ afterAll(async () => {
   await dataSource.destroy();
 });
 
-// ✅ 중복 데이터 검증 테스트
+describe('페이징 조회', () => {
+  beforeEach(async () => {
+    // 테스트용 환자 데이터 삽입
+    const patients = Array.from({ length: 100 }).map((_, i) =>
+      repository.create({
+        name: `환자${i + 1}`,
+        phone: `0101234${String(i).padStart(4, '0')}`,
+        chart_number: `100${i + 1}`,
+        ssn: `990101-${String(i).padStart(6, '*')}`,
+      }),
+    );
+
+    await repository.save(patients);
+  });
+
+  it('조회 가능 데이터가 충분하다면 limit 만큼의 데이터 반환', async () => {
+    // given-when
+    const limit = 20;
+    const offset = 0;
+    const result = await repository.findAllOrderById(limit, offset);
+
+    // then
+    expect(result.length).toBe(limit);
+    expect(result[0].name).toBe('환자1');
+  });
+
+  it('offset이후 데이터 조회 시 offset + 1 부터의 데이터 반환', async () => {
+    // given-when
+    const limit = 20;
+    const offset = 50;
+    const result = await repository.findAllOrderById(limit, offset);
+
+    // then
+    expect(result.length).toBe(limit);
+    expect(result[0].name).toBe(`환자${50 + 1}`);
+  });
+
+  it('조회 가능 데이터가 충분하지 않다면 빈 배열 반환', async () => {
+    // given-when
+    const limit = 20;
+    const offset = 500;
+    const result = await repository.findAllOrderById(limit, offset);
+
+    // then
+    expect(result.length).toBe(0);
+  });
+});
+
+// 중복 데이터 검증 테스트
 describe('(이름, 주민번호, 차트번호)-UK 기준 중복 검사 테스트', () => {
   it('(이름, 전화번호)가 동일, 차트번호가 다른 경우 insert', async () => {
     //given - 차트번호만 다른 2개의 데이터
