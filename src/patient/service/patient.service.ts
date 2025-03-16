@@ -4,8 +4,8 @@ import { PatientUploadRequest } from '../controller/request/patientUpload.reques
 import { PatientRepository } from '../repository/patient.repository';
 import { PatientUploadResponse } from '../controller/response/patientUpload.response';
 import { PatientSearchResponse } from '../controller/response/patientSearch.response';
-import { PageResponse } from 'src/utils/page.response';
-import { PageRequest } from 'src/utils/page.request';
+import { PageResponse } from '../../utils/page.response';
+import { PageRequest } from '../../utils/page.request';
 
 @Injectable()
 export class PatientService {

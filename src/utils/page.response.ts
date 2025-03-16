@@ -1,5 +1,5 @@
 import { ApiProperty, getSchemaPath } from '@nestjs/swagger';
-import { PatientSearchResponse } from 'src/patient/controller/response/patientSearch.response';
+import { PatientSearchResponse } from '../patient/controller/response/patientSearch.response';
 
 export class PageResponse<T> {
   @ApiProperty({
