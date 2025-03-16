@@ -4,7 +4,7 @@ import { PatientUploadRequest } from '../controller/request/patientUpload.reques
 import { PatientRepository } from '../repository/patient.repository';
 import { PatientUploadResponse } from '../controller/response/patientUpload.response';
 import { PatientSearchResponse } from '../controller/response/patientSearch.response';
-import { Page } from 'src/utils/page.response';
+import { PageResponse } from 'src/utils/page.response';
 import { PageRequest } from 'src/utils/page.request';
 
 @Injectable()
@@ -17,14 +17,14 @@ export class PatientService {
       param.getOffset(),
     );
 
-    return new Page<PatientSearchResponse>(
+    return new PageResponse<PatientSearchResponse>(
       param.getLimit(),
       param.getPageNo(),
       result.map((r) => new PatientSearchResponse(r)),
     );
   }
 
-  async upload(dto: PatientUploadRequest[]): Promise<PatientUploadResponse> {
+  async upload(dto: PatientUploadRequest[]) {
     const patients: Patient[] = [];
     const uniqueMap = new Map<string, Patient>();
 
