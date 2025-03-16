@@ -8,6 +8,8 @@ import {
 } from 'typeorm';
 import { Patient } from '../domain/patient.entity';
 
+const EMPTY_CHART_NUMBER = 'empty';
+
 @Injectable()
 export class PatientRepository extends Repository<Patient> {
   constructor(private readonly datasource: DataSource) {
@@ -15,7 +17,7 @@ export class PatientRepository extends Repository<Patient> {
   }
 
   async findAllOrderById(limit: number, offset: number) {
-    return await this.createQueryBuilder('patient')
+    return this.createQueryBuilder('patient')
       .orderBy('id', 'ASC')
       .limit(limit)
       .offset(offset)
@@ -23,12 +25,11 @@ export class PatientRepository extends Repository<Patient> {
   }
 
   /**
-   * 엑셀 데이터 삽입 함수.
-   * 트랜잭션 관리를 통해 중간 과정에서 실패 시 rollback 처리될 수 있도록 하나의 함수에서 전체 과정 핸들링
+   * 환자 데이터를 일괄 처리하는 메서드
    */
-  async bulkInsertOrUpdate(
+  async bulkUpsertPatients(
     patients: Patient[],
-    deduplicatedPatients: Map<string, Patient>,
+    uniqueMap: Map<string, Patient>,
     batchSize = 5000,
   ): Promise<InsertResult[]> {
     if (patients.length === 0) return [];
@@ -38,24 +39,28 @@ export class PatientRepository extends Repository<Patient> {
     await queryRunner.startTransaction();
 
     try {
-      const { existingPatients, existingPatientsWithNullChartNum } =
-        await this.getExistingPatients(queryRunner, patients);
-
-      await this.updateNullChartNumbers(
+      const duplicatePatients = await this.findExistingPatients(
         queryRunner,
-        deduplicatedPatients,
-        existingPatients,
-        existingPatientsWithNullChartNum,
+        patients,
+      );
+      const duplicatePatientsWithEmptyChart =
+        await this.findPatientsWithEmptyChart(queryRunner, patients);
+
+      await this.updateEmptyChartNumbers(
+        queryRunner,
+        uniqueMap,
+        duplicatePatients,
+        duplicatePatientsWithEmptyChart,
       );
 
-      const insertedResults = await this.batchInsertOrUpdate(
+      const affectedRows = await this.insertOrUpdatePatients(
         queryRunner,
         patients,
         batchSize,
       );
       await queryRunner.commitTransaction();
 
-      return insertedResults;
+      return affectedRows;
     } catch (err) {
       await queryRunner.rollbackTransaction();
       console.error(err);
@@ -66,91 +71,95 @@ export class PatientRepository extends Repository<Patient> {
   }
 
   /**
-   * 특수 처리를 위한 데이터 조회
+   * (이름, 전화번호, 차트번호) 조합이 이미 존재하는 환자 조회
    */
-  private async getExistingPatients(
+  private async findExistingPatients(
     queryRunner: QueryRunner,
     patients: Patient[],
-  ): Promise<{
-    existingPatients: Set<string>;
-    existingPatientsWithNullChartNum: Map<string, number>;
-  }> {
-    const existingPatients = await queryRunner.manager
+  ): Promise<Set<string>> {
+    const patientData = patients
+      .map(
+        (p) =>
+          `('${p.name}', '${p.phone}', '${p.chart_number ?? EMPTY_CHART_NUMBER}')`,
+      )
+      .join(', ');
+
+    const result = await queryRunner.manager
       .createQueryBuilder()
       .select(['id', 'name', 'phone', 'chart_number'])
       .from(Patient, 'patient')
       .where(
-        `(patient.name, patient.phone, patient.chart_number) IN (${patients
-          .map(
-            (p) =>
-              `('${p.name}', '${p.phone}', '${p.chart_number ?? 'empty'}')`,
-          )
-          .join(', ')})`,
+        `(patient.name, patient.phone, patient.chart_number) IN (${patientData})`,
       )
       .getRawMany<Patient>();
 
-    const patientsWithNullChartData = await queryRunner.manager
-      .createQueryBuilder()
-      .select(['id', 'name', 'phone'])
-      .from(Patient, 'patient')
-      .where("patient.chart_number = 'empty'")
-      .andWhere(
-        `(patient.name, patient.phone) IN (${patients
-          .map((p) => `('${p.name}', '${p.phone}')`)
-          .join(', ')})`,
-      )
-      .getRawMany<Patient>();
-
-    return {
-      existingPatients: new Set(
-        existingPatients.map(
-          (p) => `${p.name}-${p.phone}-${p.chart_number ?? 'empty'}`,
-        ),
+    return new Set(
+      result.map(
+        (p) => `${p.name}-${p.phone}-${p.chart_number ?? EMPTY_CHART_NUMBER}`,
       ),
-      existingPatientsWithNullChartNum: new Map(
-        patientsWithNullChartData.map((p) => [`${p.name}-${p.phone}`, p.id]),
-      ),
-    };
+    );
   }
 
   /**
-   * 특수 처리 진행 부분
-   * (name, phone, char_number)가 동일한 값이 DB에 없으면서, (name, phone, null) 인 데이터가 존재하면
-   * 현재 데이터를 (name, phone, null)인 데이터에 update 후 (name, phone, null)은 자료구조에서 제거
+   * 차트번호가 없는 동일한 (이름, 전화번호) 데이터를 조회
    */
-  private async updateNullChartNumbers(
+  private async findPatientsWithEmptyChart(
     queryRunner: QueryRunner,
-    deduplicatedPatients: Map<string, Patient>,
+    patients: Patient[],
+  ): Promise<Map<string, number>> {
+    const patientData = patients
+      .map((p) => `('${p.name}', '${p.phone}')`)
+      .join(', ');
+
+    const result = await queryRunner.manager
+      .createQueryBuilder()
+      .select(['id', 'name', 'phone'])
+      .from(Patient, 'patient')
+      .where('patient.chart_number = :empty', { empty: EMPTY_CHART_NUMBER })
+      .andWhere(`(patient.name, patient.phone) IN (${patientData})`)
+      .getRawMany<Patient>();
+
+    return new Map(result.map((p) => [`${p.name}-${p.phone}`, p.id]));
+  }
+
+  /**
+   * 차트번호가 없는 기존 데이터를 업데이트하여 새로운 데이터와 병합
+   */
+  private async updateEmptyChartNumbers(
+    queryRunner: QueryRunner,
+    uniquePatients: Map<string, Patient>,
     existingPatientsSet: Set<string>,
-    patientsWithNullChart: Map<string, number>,
+    patientsWithEmptyChart: Map<string, number>,
   ): Promise<void> {
     const updateQueries: Promise<UpdateResult>[] = [];
 
-    for (const [key, patient] of Array.from(deduplicatedPatients.entries())) {
+    for (const [key, patient] of Array.from(uniquePatients.entries())) {
+      const patientKey = `${patient.name}-${patient.phone}`;
+
       if (
         !existingPatientsSet.has(key) &&
-        patientsWithNullChart.has(`${patient.name}-${patient.phone}`)
+        patientsWithEmptyChart.has(patientKey)
       ) {
         updateQueries.push(
           queryRunner.manager
             .createQueryBuilder()
             .update(Patient)
             .set(patient)
-            .where('id = :id', {
-              id: patientsWithNullChart.get(`${patient.name}-${patient.phone}`),
-            })
+            .where('id = :id', { id: patientsWithEmptyChart.get(patientKey) })
             .execute(),
         );
 
-        patientsWithNullChart.delete(`${patient.name}-${patient.phone}`);
+        patientsWithEmptyChart.delete(patientKey);
       }
     }
 
     await Promise.all(updateQueries);
   }
 
-  //bulk insert
-  private async batchInsertOrUpdate(
+  /**
+   * 환자 데이터 일괄 삽입 또는 업데이트
+   */
+  private async insertOrUpdatePatients(
     queryRunner: QueryRunner,
     patients: Patient[],
     batchSize: number,
@@ -160,7 +169,7 @@ export class PatientRepository extends Repository<Patient> {
     for (let i = 0; i < patients.length; i += batchSize) {
       const batch = patients.slice(i, i + batchSize);
 
-      const insertResult = queryRunner.manager
+      const result = queryRunner.manager
         .createQueryBuilder()
         .insert()
         .into(Patient)
@@ -169,8 +178,9 @@ export class PatientRepository extends Repository<Patient> {
         .updateEntity(false)
         .execute();
 
-      insertedResults.push(insertResult);
+      insertedResults.push(result);
     }
+
     return await Promise.all(insertedResults);
   }
 }

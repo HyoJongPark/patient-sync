@@ -110,7 +110,7 @@ describe('(이름, 주민번호, 차트번호)-UK 기준 중복 검사 테스트
     }
 
     //when
-    await repository.bulkInsertOrUpdate(patients, uniqueMap);
+    await repository.bulkUpsertPatients(patients, uniqueMap);
 
     //then
     const count = await repository.count();
@@ -141,7 +141,7 @@ describe('(이름, 주민번호, 차트번호)-UK 기준 중복 검사 테스트
     }
 
     //when
-    await repository.bulkInsertOrUpdate(patients, uniqueMap);
+    await repository.bulkUpsertPatients(patients, uniqueMap);
 
     //then
     const count = await repository.count();
@@ -172,7 +172,7 @@ describe('(이름, 주민번호, 차트번호)-UK 기준 중복 검사 테스트
     }
 
     //when
-    await repository.bulkInsertOrUpdate(patients, uniqueMap);
+    await repository.bulkUpsertPatients(patients, uniqueMap);
 
     //then
     const count = await repository.count();
@@ -204,7 +204,7 @@ describe('(이름, 주민번호, 차트번호)-UK 기준 중복 검사 테스트
     );
 
     // when
-    await repository.bulkInsertOrUpdate([updatedPatient], uniqueMap);
+    await repository.bulkUpsertPatients([updatedPatient], uniqueMap);
 
     // then
     const result = await repository.findBy({
@@ -240,7 +240,7 @@ describe('(이름, 주민번호, 차트번호)-UK 기준 중복 검사 테스트
     );
 
     //when
-    await repository.bulkInsertOrUpdate([updatedPatient], uniqueMap);
+    await repository.bulkUpsertPatients([updatedPatient], uniqueMap);
 
     //then
     const result = await repository.findBy({
@@ -285,7 +285,7 @@ it('(이름, 전화번호)가 동일한 2개 이상의 데이터가 존재, DB�
   }
 
   //when
-  await repository.bulkInsertOrUpdate(patients, uniqueMap);
+  await repository.bulkUpsertPatients(patients, uniqueMap);
 
   //then
   const emptyChartNumberCount = await repository.count({
@@ -332,7 +332,7 @@ it('DB에 (이름, 전화번호, 차트번호) 동일 데이터와 (이름, 전�
   uniqueMap.set(key, patient);
 
   //when
-  await repository.bulkInsertOrUpdate([patient], uniqueMap);
+  await repository.bulkUpsertPatients([patient], uniqueMap);
 
   //then
   const result = await repository.find({

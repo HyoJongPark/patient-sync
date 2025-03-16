@@ -14,7 +14,7 @@ describe('PatientService', () => {
         {
           provide: PatientRepository,
           useValue: {
-            bulkInsertOrUpdate: jest.fn(),
+            bulkUpsertPatients: jest.fn(),
           },
         },
       ],
@@ -45,7 +45,7 @@ describe('PatientService', () => {
         createPatientDTO(duplicateData),
       ];
 
-      (patientRepository.bulkInsertOrUpdate as jest.Mock).mockResolvedValue([
+      (patientRepository.bulkUpsertPatients as jest.Mock).mockResolvedValue([
         { raw: { affectedRows: 1 } },
       ]);
 
@@ -76,7 +76,7 @@ describe('PatientService', () => {
         }),
       ];
 
-      (patientRepository.bulkInsertOrUpdate as jest.Mock).mockResolvedValue([
+      (patientRepository.bulkUpsertPatients as jest.Mock).mockResolvedValue([
         { raw: { affectedRows: mockData.length } },
       ]);
 
@@ -107,7 +107,7 @@ describe('PatientService', () => {
         }),
       ];
 
-      (patientRepository.bulkInsertOrUpdate as jest.Mock).mockResolvedValue([
+      (patientRepository.bulkUpsertPatients as jest.Mock).mockResolvedValue([
         { raw: { affectedRows: mockData.length } },
       ]);
 
@@ -121,7 +121,7 @@ describe('PatientService', () => {
     it('빈 배열 데이터의 경우 0 반환', async () => {
       //given
       const emptyArray = [];
-      (patientRepository.bulkInsertOrUpdate as jest.Mock).mockResolvedValue([
+      (patientRepository.bulkUpsertPatients as jest.Mock).mockResolvedValue([
         { raw: { affectedRows: emptyArray.length } },
       ]);
 
