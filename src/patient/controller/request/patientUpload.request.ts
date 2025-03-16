@@ -17,7 +17,7 @@ export class PatientUploadRequest {
   phone: string;
 
   @IsString()
-  @Matches(/^\d{2}(0[1-9]|1[0-2])(0[1-9]|1\d|2\d|3[0-1])(-?[1-4]\d{6})?$/, {
+  @Matches(/^\d{2}(0[1-9]|1[0-2])(0[1-9]|1\d|2\d|3[0-1])(-[1-4]\d{6})?$/, {
     message: '유효한 주민등록번호 형식이어야 합니다.',
   })
   ssn: string;
