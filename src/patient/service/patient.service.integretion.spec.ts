@@ -222,7 +222,6 @@ it('(이름, 전화번호)가 동일한 2개 이상의 데이터가 존재, DB�
     order: { id: 'ASC' },
   });
 
-  console.log(result);
   expect(emptyChartNumberCount).toBe(0);
   expect(result[0].chart_number).toBe(patients[0].chart_number);
   expect(result[1].chart_number).toBe(patients[1].chart_number);

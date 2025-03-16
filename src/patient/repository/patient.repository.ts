@@ -116,6 +116,7 @@ export class PatientRepository extends Repository<Patient> {
           .where('id = :id', { id: patientsWithEmptyChart.get(key) })
           .execute(),
       );
+      patientsWithEmptyChart.delete(key);
     }
 
     return Promise.all(updateQueries);
