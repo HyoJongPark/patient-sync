@@ -78,11 +78,13 @@ export class PatientController {
     if (!file) {
       throw new BadRequestException('데이터 파일이 존재하지 않습니다.');
     }
-    const dto = await new ExcelFileParser<PatientUploadRequest>(
+    const { count, dto } = await new ExcelFileParser<PatientUploadRequest>(
       fieldMap,
       PatientUploadRequest,
     ).parse(file.buffer);
 
-    return await this.patientService.upload(dto);
+    const result = await this.patientService.upload(dto);
+    result.setFailedAndTotal(count);
+    return result;
   }
 }
